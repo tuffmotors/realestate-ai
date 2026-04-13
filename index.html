@@ -446,6 +446,78 @@
       return (value || "Not provided").toString().trim();
     }
 
+    function validateStepInput(stepKey, input) {
+      const value = input.trim();
+      const normalized = value.toLowerCase();
+
+      if (stepKey === "goal") {
+        if (normalized === "buy" || normalized === "rent") {
+          return { valid: true, value: normalized };
+        }
+        return {
+          valid: false,
+          error: "Please type either 'buy' or 'rent' to continue"
+        };
+      }
+
+      if (stepKey === "budget") {
+        const budgetPattern = /^(?=.*\d)[\$\s\d,.\-kKmMm+toTO]+$/;
+        if (budgetPattern.test(value)) {
+          return { valid: true, value };
+        }
+        return {
+          valid: false,
+          error: "Please enter a valid budget amount e.g. $500,000 or $500k-$800k"
+        };
+      }
+
+      if (stepKey === "area") {
+        if (value.length >= 3) {
+          return { valid: true, value };
+        }
+        return {
+          valid: false,
+          error: "Please enter a suburb or area name"
+        };
+      }
+
+      if (stepKey === "timeline") {
+        const timelinePattern = /\b(day|days|week|weeks|month|months|year|years)\b/i;
+        if (timelinePattern.test(value)) {
+          return { valid: true, value };
+        }
+        return {
+          valid: false,
+          error: "Please enter a timeline e.g. 3 months or 1 year"
+        };
+      }
+
+      if (stepKey === "name") {
+        const namePattern = /^[A-Za-z]+(?:[ '-][A-Za-z]+)+$/;
+        if (namePattern.test(value)) {
+          return { valid: true, value };
+        }
+        return {
+          valid: false,
+          error: "Please enter your full name"
+        };
+      }
+
+      if (stepKey === "phone") {
+        const digitsOnly = value.replace(/\D/g, "");
+        const phonePattern = /^[+\d()\-\s.]+$/;
+        if (phonePattern.test(value) && digitsOnly.length >= 8) {
+          return { valid: true, value };
+        }
+        return {
+          valid: false,
+          error: "Please enter a valid phone number"
+        };
+      }
+
+      return { valid: true, value };
+    }
+
     function showNotification() {
       notification.classList.add("show");
       setTimeout(() => notification.classList.remove("show"), 2200);
@@ -505,7 +577,14 @@
       chatInput.value = "";
 
       const step = conversationSteps[currentStepIndex];
-      leadInProgress[step.key] = text;
+      const validation = validateStepInput(step.key, text);
+      if (!validation.valid) {
+        addMessage(validation.error, "bot");
+        chatInput.focus();
+        return;
+      }
+
+      leadInProgress[step.key] = validation.value;
       currentStepIndex += 1;
 
       if (currentStepIndex < conversationSteps.length) {
